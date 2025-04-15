@@ -1,0 +1,438 @@
+// Advanced DAX Queries 
+
+//1. List All Active CABS :
+
+EVALUATE
+FILTER('Cabs', 'Cabs'[Active] = "YES")
+
+
+// COunt of ACTIVE CABS by Licence Type
+
+EVALUATE
+SUMMARIZECOLUMNS( 
+   'Cabs'[LicenseType], "ActiveCount", CALCULATE(COUNTROWS('Cabs'), 'Cabs'[Active]= "YES")
+   
+   )
+ 
+ // 3. CAbs Accessible for Wheelchair -- Data Inconsistancy
+ 
+ EVALUATE
+ FILTER('Cabs',  NOT ISBLANK( 'Cabs'[WheelchairAccessible]))
+
+//4. Cabs by Year of Vehicle 
+
+EVALUATE
+SUMMARIZE(
+'Cabs', 
+'Cabs'[VehicleYear],
+"CabCount", COUNTROWS('Cabs')
+)
+
+// 5. COunt of Websites Provided:
+
+EVALUATE
+ROW("CabswithWebsite", COUNTROWS(FILTER('Cabs',  NOT ISBLANK('Cabs'[Website])))
+
+)
+
+// 6. Vehicle Years - Min, Max, Avg 
+
+EVALUATE
+SUMMARIZECOLUMNS( 
+  "MinYear", MIN('Cabs'[VehicleYear]),
+  "MaxYear", MAX('Cabs'[VehicleYear]),
+  "AVGYear", AVERAGE('Cabs'[VehicleYear]))
+  
+  
+// 7. Cab Count Per Address
+
+EVALUATE
+SUMMARIZECOLUMNS(
+  'Cabs'[Address],
+  "CabCount", COUNTROWS('Cabs')
+)
+
+// 8 . VehicleType NULL Value check:
+
+EVALUATE
+FILTER('Cabs', ISBLANK('Cabs'[VehicleType]))
+
+
+//9. TOPN - Top 5 addresses by Number of Cabs:
+
+EVALUATE
+TOPN(
+  5,
+  SUMMARIZE('Cabs', 'Cabs'[Address], "CabCount", COUNTROWS('Cabs')),
+  [CabCount], DESC  
+  
+ )
+
+
+//10.  ALLEXCEPT - 
+// Dubilcates in VINS 
+
+EVALUATE
+ FILTER( 
+    ADDCOLUMNS(
+      'Cabs',
+      "Count", CALCULATE(COUNTROWS('Cabs'), ALLEXCEPT('Cabs', 'Cabs'[VehicleVinNumber]))
+   ),
+   [Count] > 1
+ )
+
+// 11. Multi-Level Grouping & Filtering 
+
+// Multiple Columns - Cabs By Licence Type & VehicleYear 
+
+
+EVALUATE
+SUMMARIZE(
+    'Cabs',
+    'Cabs'[LicenseType],
+    'Cabs'[VehicleYear],
+     "CabCount", COUNTROWS('Cabs')
+)
+
+// 12. ADvance Grouping FIlters and Metrics:
+// Cabs with Same Phone Numbers:
+
+EVALUATE
+FILTER(
+  ADDCOLUMNS(
+    'Cabs',  
+   "Count", CALCULATE(COUNTROWS('Cabs'), ALLEXCEPT('Cabs', 'Cabs'[TelephoneNumber])) 
+  ),
+  [Count] > 1   
+)
+
+//13.  Vehcile Registered between 2012 & 2016 
+
+EVALUATE
+FILTER('Cabs', 'Cabs'[VehicleYear] >= 2012 && 'Cabs'[VehicleYear] <=2016) 
+
+// 14. Vehicle Year by Licence Type Average
+
+EVALUATE
+SUMMARIZECOLUMNS(
+   'Cabs'[LicenseType],
+   "AvgYear", AVERAGE('Cabs'[VehicleYear])
+)
+
+// 15. Address Contains ZIP Code 1000.
+// SEARCH Function
+
+EVALUATE 
+FILTER('Cabs', SEARCH("10463", 'Cabs'[Address], 1, 0) > 0)
+
+
+
+// 16. Rank Cabs by Vehicle Year (Descending)
+
+EVALUATE
+ADDCOLUMNS( 
+  'Cabs',
+  "YearRank", RANKX(ALL('Cabs'), 'Cabs'[VehicleYear], , DESC)
+  )
+
+// 17. Idenity can entries without a CAb Number
+EVALUATE
+FILTER('Cabs',  ISBLANK('Cabs'[CabNumber]))
+
+
+// 18. COunt Of Cabs where Owner Must Drive 
+
+EVALUATE
+CALCULATETABLE(
+FILTER('Cabs', 'Cabs'[LicenseType] = "OWNER MUST DRIVE"),
+    ALL('Cabs')
+    )
+
+// 19. Group Duplicate VIN Numbers:
+
+EVALUATE
+FILTER( 
+ADDCOLUMNS( 
+   'Cabs',
+   "VINCount", CALCULATE(COUNTROWS('Cabs'), ALLEXCEPT('Cabs', 'Cabs'[VehicleVinNumber]))
+ ),
+ [VINCount] > 1 
+ 
+ )
+
+// 20. Group Website Domains & Count:
+
+EVALUATE
+SUMMARIZE(
+    ADDCOLUMNS('Cabs',
+        "Domain", 
+        IF(
+            ISBLANK('Cabs'[Website]) || FIND(".", 'Cabs'[Website], 1, 0) = 0, // || is Piping method in search or Find  
+            "N/A",
+            RIGHT('Cabs'[Website], LEN('Cabs'[Website]) - FIND(".", 'Cabs'[Website], 1))
+        )
+    ),
+    [Domain],
+    "Count", COUNTX('Cabs', [Domain])
+)
+
+// 21. Compare Active  VS Non-ACtive 
+
+EVALUATE
+SUMMARIZE(
+  'Cabs', 
+  'Cabs'[Active],
+  "Total", COUNTROWS('Cabs')
+)
+
+
+// 22. Finding Duplicate Phone Number:
+
+EVALUATE
+FILTER(
+   ADDCOLUMNS('Cabs',
+      "PhoneCount", CALCULATE(COUNTROWS('Cabs'), ALLEXCEPT('Cabs', 'Cabs'[TelephoneNumber]))
+      ),
+      [PhoneCount] > 1 
+)
+
+
+
+// 23. Top 5 VIN Prefixes by Coun
+
+EVALUATE
+TOPN(
+  10, 
+  SUMMARIZE(
+      ADDCOLUMNS('Cabs', "VINPrefix", LEFT('Cabs'[VehicleVinNumber], 4)), 
+      [VINPrefix],
+      "Count", COUNTROWS('Cabs') 
+      
+      ),
+      [Count],
+      DESC
+)
+
+// 24. Vehicle by Address Frequency 
+EVALUATE
+SUMMARIZE( 
+     'Cabs',
+     'Cabs'[Address],
+     "CabCount", COUNTROWS('Cabs')
+ )
+
+// 25. COunt of Vehicles Per Year for Owner MUST DRIVE Only
+
+EVALUATE
+SUMMARIZE(
+  FILTER('Cabs', 'Cabs'[LicenseType] = "OWNER MUST DRIVE"),
+  'Cabs'[VehicleYear],
+  "Count", COUNTROWS('Cabs')
+ )
+
+//26. Top 10 Names by Cab Count 
+
+EVALUATE
+TOPN(
+ 	5,
+ 	SUMMARIZE('Cabs', 'Cabs'[Name], "Count", COUNTROWS('Cabs')),
+    [Count],
+    DESC
+)
+
+// 27. All Cabs with Year = Current Year ? 
+
+EVALUATE
+  FILTER('Cabs', 'Cabs'[VehicleYear] = YEAR(TODAY()) 
+
+)
+
+// 28. Count of Patients by Gender
+EVALUATE
+SUMMARIZECOLUMNS('healthcare'[Gender], "Count", COUNTROWS('healthcare')
+
+)
+
+//29. Count of Patients by Blood Group Type:
+
+EVALUATE
+SUMMARIZECOLUMNS('healthcare'[Blood Type], "Patients", COUNTROWS('healthcare')
+)
+
+//30. Average billing amount by Medical Condition
+
+EVALUATE
+ADDCOLUMNS(VALUES('healthcare'[Medical Condition]),
+"AVG_BILLING", AVERAGE('healthcare'[Billing Amount])
+
+)
+
+// 31. Totalbilling Amount by Insurance Provider
+
+
+EVALUATE
+ADDCOLUMNS(VALUES('healthcare'[Insurance Provider]),
+"TOTAL BILLING", SUM('healthcare'[Billing Amount])
+)
+
+
+// 32. Avergae AGE of Patients by Gender
+
+EVALUATE
+SUMMARIZECOLUMNS('healthcare'[Gender], "AVG_AGE", 
+                 AVERAGE('healthcare'[Age]))
+                 
+
+//33. Patient Count by Date of Admission
+EVALUATE
+ADDCOLUMNS(VALUES('healthcare'[Date of Admission]), 
+           "IN_Patients", CALCULATE(COUNTROWS('healthcare')))
+           
+// 34. Count of Discharge by DATE
+
+EVALUATE
+ADDCOLUMNS(VALUES('healthcare'[Discharge Date]), 
+           "OUT_Patients", CALCULATE(COUNTROWS('healthcare')))
+
+
+// 35.  Average Stay Duration by DOCTOR 
+
+EVALUATE
+ADDCOLUMNS(SUMMARIZE('healthcare', 'healthcare'[Doctor]), 
+
+"AVG_STAY_DAYS", AVERAGEX('healthcare', DATEDIFF('healthcare'[Date of Admission], 'healthcare'[Discharge Date], DAY))
+
+)
+
+// 36.  Average Stay Duration by PATIENT 
+
+EVALUATE
+ADDCOLUMNS(SUMMARIZE('healthcare', 'healthcare'[Name]), 
+
+"Patient_AVG_STAY_DAYS", AVERAGEX('healthcare', DATEDIFF('healthcare'[Date of Admission], 'healthcare'[Discharge Date], DAY))
+)
+
+// 37. Number of Admissions in 2020 by Hospitals
+
+
+EVALUATE
+ADDCOLUMNS
+	(VALUES('healthcare'[Hospital]), 
+	"Admissions in 2020", CALCULATE(COUNTROWS('healthcare'),
+	YEAR('healthcare'[Date of Admission]) = 2020))
+
+// 38. Patient Count in 2023 by Doctor
+
+EVALUATE
+ADDCOLUMNS(VALUES('healthcare'[Doctor]), 
+"2023_Patients_by_DOCTOR", CALCULATE(COUNTROWS('healthcare'), YEAR('healthcare'[Date of Admission]) = 2023))
+
+//39. Patient Count per Medication
+
+EVALUATE
+ADDCOLUMNS(VALUES('healthcare'[Medication]), 
+"Patient_COunt_Per_Medication", CALCULATE(COUNTROWS('healthcare')))
+
+// 40. Most Common Medical COndition
+
+EVALUATE
+TOPN
+(1, SUMMARIZE('healthcare', 'healthcare'[Medical Condition], 
+"Patient_COUNT", COUNTROWS('healthcare')), [Patient_COUNT], DESC)
+
+// 41. AVERAGE AGE of Patients per Condition
+
+EVALUATE
+ADDCOLUMNS(VALUES('healthcare'[Medical Condition]),
+"AVG_AGE", AVERAGE('healthcare'[Age]))
+
+// 42. Patient COunt by Doctor for Diabetes
+EVALUATE
+ADDCOLUMNS(VALUES('healthcare'[Doctor]), 
+"DIABETES_PATIENTS", CALCULATE(	COUNTROWS('healthcare'),'healthcare'[Medical Condition] = "Diabetes"))
+
+// 43. Avergae Billing Per Admission Type 
+
+EVALUATE
+ADDCOLUMNS(VALUES('healthcare'[Admission Type]), 
+"AVG_BILLING_PER_ADMISSION_TYPE", AVERAGE('healthcare'[Billing Amount]))
+
+
+// 44. Total Billing per Hospital
+
+EVALUATE
+ADDCOLUMNS(VALUES('healthcare'[Hospital]), 
+"TOTAL_BILLING_PER_Hospital", SUM('healthcare'[Billing Amount])
+)
+
+
+// 45. INSURANCE-WISE patient count and total Billing
+EVALUATE
+ADDCOLUMNS(VALUES('healthcare'[Insurance Provider]), 
+"Patients", CALCULATE(COUNTROWS('healthcare')), 
+"Total_Biling", CALCULATE(SUM('healthcare'[Billing Amount])))
+
+
+
+// 46.Top 3 Insuarance Providers by billing -- Check_later
+
+EVALUATE
+TOPN(
+    3, 
+    ADDCOLUMNS(VALUES('healthcare'[Insurance Provider]), 
+    "Total_Billing", CALCULATE(SUM('healthcare'[Billing Amount]))),
+
+    [Total_Billing], DESC) 
+   
+
+// 47. Billing to AGE Ration by Patients:
+
+EVALUATE
+ADDCOLUMNS('healthcare',
+"Billing_To_AGE_Ration", DIVIDE('healthcare'[Billing Amount], healthcare[Age])
+)
+
+
+// Flag the Patients with Longer Stay ( > 15 Days)
+
+EVALUATE
+ADDCOLUMNS( 
+  'healthcare',
+  "Long_Stay_Flag", IF(
+   DATEDIFF('healthcare'[Date of Admission], 'healthcare'[Discharge Date], DAY) > 15, 
+   "YES", "NO"   
+  )
+
+)
+
+// SWITCH - CONDITION:
+// Billing Category Based on AMOUNT
+
+EVALUATE
+ADDCOLUMNS('healthcare',
+     "BILLING_CATEGORY",
+     SWITCH(
+      TRUE(),
+      'healthcare'[Billing Amount] < 20000, "LOW",
+      'healthcare'[Billing Amount] < 40000, "MEDIUM",
+      "HIGH"
+      
+      )
+)
+
+// AGE GROUPING - SWITCH Function
+
+EVALUATE
+ADDCOLUMNS('healthcare',
+           "AGE_GROUP",
+           SWITCH(
+                  TRUE(),
+                  'healthcare'[Age] <=18, "CHILD",
+                  'healthcare'[Age] <=40, "ADULT",
+                  'healthcare'[Age] <=60, "Middle-AGED",
+                  "SENIOR_CITIZEN"
+                 )
+          )
+
+
+

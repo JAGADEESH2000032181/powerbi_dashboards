@@ -1,0 +1,236 @@
+// EVALUATE EMployees with Salary > 50000
+
+EVALUATE
+FILTER(
+     EmployeeData,
+     EmployeeData[Salary] >= 50000
+)
+
+// Generated DAX Query - TOPN
+EVALUATE 
+TOPN( 500, EmployeeData )
+
+// Evaluate CALIFORNIA profit in ASC or DESC order
+
+EVALUATE
+FILTER( 'companies', 'companies'[State] = "California")
+ORDER BY
+'companies'[Profit] DESC  // AScending or Descending 
+
+
+// RANKX using - list out top 3 profitable companies
+
+EVALUATE 
+TOPN( 
+    3, 
+    ADDCOLUMNS( 
+        'Companies', 
+        "Rank", RANKX(RELATEDTABLE('Companies'), 'Companies'[Profit], , DESC) 
+    ), 
+    'Companies'[Profit], DESC 
+) 
+
+// Keep Filters with values - Calculate average profit from each state
+
+EVALUATE
+ADDCOLUMNS(
+   VALUES('companies'[State]),
+   "Average Profit (Filtered)", AVERAGEX(KEEPFILTERS('companies'), 'companies'[Profit])
+)
+
+
+// Total R & D Spent:
+
+EVALUATE
+SUMMARIZE(
+  'companies',
+  "Total R&D Spend", SUM('companies'[R_D Spend])
+)
+
+
+// Total Marketing Spent:
+EVALUATE
+SUMMARIZE(
+  'companies',
+  "Total Marketing_Spent", SUM('companies'[Marketing Spend])
+)
+
+
+// Total Profit :
+EVALUATE
+SUMMARIZE(
+  'companies',
+  "Total Profit", SUM('companies'[Profit])
+)
+
+//Average Profit 
+EVALUATE
+SUMMARIZE(
+  'companies',
+  "Average_Profit", AVERAGE('companies'[Profit])
+
+)
+
+//Maximum R & D Spent:
+EVALUATE
+SUMMARIZE(
+  'companies',
+  "MAX_R&D_Spent", MAX('companies'[R_D Spend])
+
+)
+
+//MAX Profit:
+EVALUATE
+SUMMARIZE(
+  'companies',
+  "MAX_Profit", MAX('companies'[Profit])
+)
+
+//Total R&D Spend by Statewise:
+EVALUATE
+SUMMARIZE(
+  'companies',
+  'companies'[State],
+  "Total R&D Spend by Statewise", SUM('companies'[R_D Spend])
+)
+
+
+// Total profit by Statewise:
+EVALUATE
+SUMMARIZE(
+  'companies',
+  'companies'[State],
+  "Total Profit by State", SUM('companies'[Profit])
+)
+
+// Total Marketing Spend by State
+EVALUATE
+SUMMARIZE(
+  'companies',
+  'companies'[State],
+  "Total Marketing_Spent by State", SUM('companies'[Marketing Spend])
+)
+
+// Avergae ADministration spend by State
+EVALUATE
+SUMMARIZE(
+  'companies',
+  'companies'[State],
+  "Average Admin spent by state", AVERAGE('companies'[Administration])
+)
+
+// Total SPENT by STATEWISE  - SUM FUnction
+EVALUATE
+SUMMARIZE(
+  'companies',
+  'companies'[State],
+  "Total Spent by Statewise ", SUM('companies'[Administration]) + SUM('companies'[R_D Spend]) + SUM('companies'[Marketing Spend])
+)
+
+// // Total SPENT by STATEWISE  -  ADDColumns function
+EVALUATE
+ADDCOLUMNS(
+  'companies',
+  "Total Spent by Statewise", 
+  'companies'[Administration] + 'companies'[R_D Spend] + 'companies'[Marketing Spend]
+)
+
+
+// Profit to Total Spent Ratio
+EVALUATE
+ADDCOLUMNS(
+  'companies',
+  "Profit to Total Spent Ratio",
+  DIVIDE('companies'[Profit], 'companies'[Administration] + 'companies'[R_D Spend] + 'companies'[Marketing Spend])
+)
+
+//R&D Spent Percentage of Total Spent
+
+EVALUATE
+ADDCOLUMNS(
+  'companies',
+  "Profit to Total Spent Ratio",
+  DIVIDE('companies'[R_D Spend], 'companies'[Administration] + 'companies'[R_D Spend] + 'companies'[Marketing Spend])*100
+
+)
+
+//Marketing Spent Percentage of Total Spent
+
+
+
+//Administration Spent Percentage of Total Spent
+
+
+//Rank By Profit 
+EVALUATE
+ADDCOLUMNS(
+  'companies',
+  "Rank by Profit",
+  RANKX(ALL('companies'), 'companies'[Profit], , DESC)
+)
+
+//Companies in New York:
+EVALUATE
+FILTER(
+ 'companies',
+ 'companies'[State] = "New York"
+)
+
+
+// Companies in Florida:
+EVALUATE
+FILTER(
+ 'companies',
+ 'companies'[State] = "Florida"
+)
+
+//Companies in California:
+
+EVALUATE
+FILTER(
+ 'companies',
+ 'companies'[State] = "California"
+)
+
+
+// Companies with R&D spent Greater than Marketing Spend 
+
+// Companies with Missing Values - ISBLANK
+EVALUATE
+FILTER(
+ 'companies',
+ ISBLANK('companies'[State])
+ 
+)
+
+
+EVALUATE
+FILTER(
+ 'companies',
+ ISBLANK('companies'[Profit])
+ 
+)
+
+//Companies with Zero R&D Spend
+EVALUATE
+FILTER(
+ 'companies',
+ 'companies'[R_D Spend] = 0
+)
+
+
+// Companies with Zero Marketing Spend
+EVALUATE
+FILTER(
+ 'companies',
+ 'companies'[Marketing Spend] = 0
+)
+
+// *** RANKX   & ALL ***
+//Rank By Profit 
+EVALUATE
+ADDCOLUMNS(
+  'companies',
+  "Rank by Profit",
+  RANKX(ALL('companies'), 'companies'[Profit], , DESC)
+)
